@@ -29,11 +29,11 @@ func main() {
 	numPixels := (imgHeight * imgWidth)
 	pixels := make([]string, numPixels)
 
-	origin := vec3.Point{0, 0, 0}
-	horizontal := vec3.Point{4, 0, 0}
-	vertical := vec3.Point{0, 2.25, 0}
+	origin := vec3.Point{X: 0, Y: 0, Z: 0}
+	horizontal := vec3.Point{X: 4, Y: 0, Z: 0}
+	vertical := vec3.Point{X: 0, Y: 2.25, Z: 0}
 
-	lowerLeftCorner := origin.Sub(horizontal.ScalarDiv(2)).Sub(vertical.ScalarDiv(2)).Sub(vec3.Vec3{0, 0, 1})
+	lowerLeftCorner := origin.Sub(horizontal.ScalarDiv(2)).Sub(vertical.ScalarDiv(2)).Sub(vec3.Vec3{X: 0, Y: 0, Z: 1})
 
 	fmt.Fprintf(f, "P3\n")
 	fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
@@ -57,11 +57,11 @@ func main() {
 
 // RayColor returns the ray color
 func RayColor(r ray.Ray) vec3.Color {
-	sphere := objects.Sphere{Center: vec3.Point{0, 0, -1}, Radius: 0.5}
+	sphere := objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5}
 	hitRec := objects.HitRecord{}
 	_ = sphere.Hit(r, &hitRec)
 	if hitRec.T > 0 {
-		N := hitRec.P.Sub(vec3.Vec3{0, 0, -1})
+		N := hitRec.P.Sub(vec3.Vec3{X: 0, Y: 0, Z: -1})
 		return vec3.Color{
 			X: N.X,
 			Y: N.Y,
@@ -70,6 +70,6 @@ func RayColor(r ray.Ray) vec3.Color {
 	}
 	direction := r.Direction.Unit()
 	t := 0.5 * (direction.Y + 1.0)
-	rayColor := vec3.Color{1, 1, 1}.ScalarMul(1 - t).Add(vec3.Color{0.5, 0.7, 1}.ScalarMul(t))
+	rayColor := vec3.Color{X: 1, Y: 1, Z: 1}.ScalarMul(1 - t).Add(vec3.Color{X: 0.5, Y: 0.7, Z: 1}.ScalarMul(t))
 	return rayColor
 }
