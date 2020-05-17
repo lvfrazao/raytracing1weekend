@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/objects"
 	"github.com/vfrazao-ns1/raytracing1weekend/ray"
@@ -25,8 +26,8 @@ func main() {
 	imgWidth := 3840
 	aspect := 16.0 / 9.0
 	imgHeight := int(float64(imgWidth) / aspect)
-	// numPixels := (imgHeight * imgWidth)
-	// pixels := make([]vec3.Color, numPixels)
+	numPixels := (imgHeight * imgWidth)
+	pixels := make([]string, numPixels)
 
 	origin := vec3.Point{0, 0, 0}
 	horizontal := vec3.Point{4, 0, 0}
@@ -47,15 +48,11 @@ func main() {
 				Direction: lowerLeftCorner.Add(horizontal.ScalarMul(u)).Add(vertical.ScalarMul(v)),
 			}
 
-			// pixels[(imgWidth*(imgHeight-1-j))+i] = ray.RayColor()
-			pixel := RayColor(ray)
-			fmt.Fprintf(f, "%s\n", pixel.ColorString())
-
+			pixels[(imgWidth*(imgHeight-1-j))+i] = RayColor(ray).ColorString()
 		}
 	}
+	fmt.Fprintf(f, strings.Join(pixels, "\n"))
 	fmt.Fprintf(os.Stderr, "\nDone\n")
-	// img := ppm.PPM{Width: imgWidth, Height: imgHeight, MaxColor: maxColor, Pixels: pixels}
-	// img.PrintFile()
 }
 
 // RayColor returns the ray color
@@ -64,7 +61,7 @@ func RayColor(r ray.Ray) vec3.Color {
 	hitRec := objects.HitRecord{}
 	_ = sphere.Hit(r, &hitRec)
 	if hitRec.T > 0 {
-		N := r.Position(hitRec.T).Sub(vec3.Vec3{0, 0, -1})
+		N := hitRec.P.Sub(vec3.Vec3{0, 0, -1})
 		return vec3.Color{
 			X: N.X,
 			Y: N.Y,
