@@ -20,7 +20,7 @@ func (s Sphere) Hit(ray ray.Ray, rec *HitRecord) bool {
 	a := ray.Direction.LengthSquared()
 	halfB := oc.Dot(ray.Direction)
 	c := oc.LengthSquared() - s.Radius*s.Radius
-	discriminant := halfB*halfB - 4*a*c
+	discriminant := halfB*halfB - a*c
 	if discriminant > 0 {
 		root := math.Sqrt(discriminant)
 		temp := (-halfB - root) / a
