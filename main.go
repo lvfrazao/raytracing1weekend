@@ -29,6 +29,7 @@ func main() {
 	aspect := 16.0 / 9.0
 	imgHeight := int(float64(imgWidth) / aspect)
 	samplesPerPixel := 100
+	maxDepth := 50
 
 	numPixels := (imgHeight * imgWidth)
 	pixels := make([]string, numPixels)
@@ -51,7 +52,7 @@ func main() {
 				u := (float64(i) + randomDouble()) / float64(imgWidth-1)
 				v := (float64(j) + randomDouble()) / float64(imgHeight-1)
 				ray := cam.GetRay(u, v)
-				pixel = pixel.Add(RayColor(ray, world))
+				pixel = pixel.Add(RayColor(ray, world, maxDepth))
 			}
 
 			pixels[(imgWidth*(imgHeight-1-j))+i] = pixel.ColorString(samplesPerPixel)
@@ -62,12 +63,19 @@ func main() {
 }
 
 // RayColor returns the ray color
-func RayColor(r ray.Ray, world objects.Hittable) vec3.Color {
+func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
 	hitRec := new(objects.HitRecord)
-	tmin := 0.0
+
+	if depth <= 0 {
+		return vec3.Color{X: 0, Y: 0, Z: 0}
+	}
+
+	tmin := 0.001
 	tmax := math.Inf(1)
 	if world.Hit(r, tmin, tmax, hitRec) {
-		return vec3.Color{X: 1, Y: 1, Z: 1}.Add(hitRec.Normal).ScalarMul(0.5)
+		// target := hitRec.P.Add(hitRec.Normal).Add(randomUnitVector())
+		target := hitRec.P.Add(randomInHemisphere(hitRec.Normal))
+		return RayColor(ray.Ray{Origin: hitRec.P, Direction: target.Sub(hitRec.P)}, world, depth-1).ScalarMul(0.5)
 	}
 
 	// If no hits then the color == background

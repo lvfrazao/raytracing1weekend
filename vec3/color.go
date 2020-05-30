@@ -1,6 +1,9 @@
 package vec3
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // Color represents a color
 type Color = Vec3
@@ -12,9 +15,9 @@ func (c Color) ColorString(samplesPerPixel int) string {
 	b := c.Z
 
 	scale := 1.0 / float64(samplesPerPixel)
-	r *= scale
-	g *= scale
-	b *= scale
+	r = math.Sqrt(scale * r)
+	g = math.Sqrt(scale * g)
+	b = math.Sqrt(scale * b)
 
 	return fmt.Sprintf("%d %d %d", int(256*clamp(r, 0, 0.999)), int(256*clamp(g, 0, 0.999)), int(256*clamp(b, 0, 0.999)))
 }
