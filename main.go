@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/vfrazao-ns1/raytracing1weekend/camera"
 	"github.com/vfrazao-ns1/raytracing1weekend/objects"
 	"github.com/vfrazao-ns1/raytracing1weekend/ray"
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
@@ -27,18 +28,16 @@ func main() {
 	imgWidth := 3840
 	aspect := 16.0 / 9.0
 	imgHeight := int(float64(imgWidth) / aspect)
+	samplesPerPixel := 100
+
 	numPixels := (imgHeight * imgWidth)
 	pixels := make([]string, numPixels)
-
-	origin := vec3.Point{X: 0, Y: 0, Z: 0}
-	horizontal := vec3.Point{X: 4, Y: 0, Z: 0}
-	vertical := vec3.Point{X: 0, Y: 2.25, Z: 0}
-
-	lowerLeftCorner := origin.Sub(horizontal.ScalarDiv(2)).Sub(vertical.ScalarDiv(2)).Sub(vec3.Vec3{X: 0, Y: 0, Z: 1})
 
 	world := new(objects.HittableList)
 	world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5})
 	world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: -100.5, Z: -1}, Radius: 100})
+
+	cam := camera.InitCamera()
 
 	fmt.Fprintf(f, "P3\n")
 	fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
@@ -46,14 +45,16 @@ func main() {
 	for j := (imgHeight - 1); j >= 0; j-- {
 		fmt.Fprintf(os.Stderr, "\rScanlines remaining: %10d", j)
 		for i := 0; i < imgWidth; i++ {
-			u := float64(i) / float64(imgWidth-1)
-			v := float64(j) / float64(imgHeight-1)
-			ray := ray.Ray{
-				Origin:    origin,
-				Direction: lowerLeftCorner.Add(horizontal.ScalarMul(u)).Add(vertical.ScalarMul(v)),
+
+			pixel := vec3.Color{X: 0, Y: 0, Z: 0}
+			for s := 0; s < samplesPerPixel; s++ {
+				u := (float64(i) + randomDouble()) / float64(imgWidth-1)
+				v := (float64(j) + randomDouble()) / float64(imgHeight-1)
+				ray := cam.GetRay(u, v)
+				pixel = pixel.Add(RayColor(ray, world))
 			}
 
-			pixels[(imgWidth*(imgHeight-1-j))+i] = RayColor(ray, world).ColorString()
+			pixels[(imgWidth*(imgHeight-1-j))+i] = pixel.ColorString(samplesPerPixel)
 		}
 	}
 	fmt.Fprintf(f, strings.Join(pixels, "\n"))
