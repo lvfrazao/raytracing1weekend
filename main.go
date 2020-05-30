@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -35,6 +36,10 @@ func main() {
 
 	lowerLeftCorner := origin.Sub(horizontal.ScalarDiv(2)).Sub(vertical.ScalarDiv(2)).Sub(vec3.Vec3{X: 0, Y: 0, Z: 1})
 
+	world := new(objects.HittableList)
+	world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5})
+	world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: -100.5, Z: -1}, Radius: 100})
+
 	fmt.Fprintf(f, "P3\n")
 	fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
 	fmt.Fprintf(f, "%d\n", maxColor)
@@ -48,7 +53,7 @@ func main() {
 				Direction: lowerLeftCorner.Add(horizontal.ScalarMul(u)).Add(vertical.ScalarMul(v)),
 			}
 
-			pixels[(imgWidth*(imgHeight-1-j))+i] = RayColor(ray).ColorString()
+			pixels[(imgWidth*(imgHeight-1-j))+i] = RayColor(ray, world).ColorString()
 		}
 	}
 	fmt.Fprintf(f, strings.Join(pixels, "\n"))
@@ -56,20 +61,16 @@ func main() {
 }
 
 // RayColor returns the ray color
-func RayColor(r ray.Ray) vec3.Color {
-	sphere := objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5}
-	hitRec := objects.HitRecord{}
-	_ = sphere.Hit(r, &hitRec)
-	if hitRec.T > 0 {
-		N := hitRec.P.Sub(vec3.Vec3{X: 0, Y: 0, Z: -1})
-		return vec3.Color{
-			X: N.X,
-			Y: N.Y,
-			Z: N.Z,
-		}.ScalarAdd(1).ScalarDiv(2)
+func RayColor(r ray.Ray, world objects.Hittable) vec3.Color {
+	hitRec := new(objects.HitRecord)
+	tmin := 0.0
+	tmax := math.Inf(1)
+	if world.Hit(r, tmin, tmax, hitRec) {
+		return vec3.Color{X: 1, Y: 1, Z: 1}.Add(hitRec.Normal).ScalarMul(0.5)
 	}
-	direction := r.Direction.Unit()
-	t := 0.5 * (direction.Y + 1.0)
-	rayColor := vec3.Color{X: 1, Y: 1, Z: 1}.ScalarMul(1 - t).Add(vec3.Color{X: 0.5, Y: 0.7, Z: 1}.ScalarMul(t))
-	return rayColor
+
+	// If no hits then the color == background
+	unitDirection := r.Direction.Unit()
+	t := 0.5 * (unitDirection.Y + 1.0)
+	return vec3.Color{X: 1, Y: 1, Z: 1}.ScalarMul(1 - t).Add(vec3.Color{X: 0.5, Y: 0.7, Z: 1}.ScalarMul(t))
 }

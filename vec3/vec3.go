@@ -37,6 +37,11 @@ func (v Vec3) Sub(other Vec3) Vec3 {
 	return Vec3{X: v.X - other.X, Y: v.Y - other.Y, Z: v.Z - other.Z}
 }
 
+// Negate Negates a Vec3
+func (v Vec3) Negate() Vec3 {
+	return Vec3{X: -v.X, Y: -v.Y, Z: -v.Z}
+}
+
 // Mul multiplies two Vec3s together
 func (v Vec3) Mul(other Vec3) Vec3 {
 	return Vec3{X: v.X * other.X, Y: v.Y * other.Y, Z: v.Z * other.Z}

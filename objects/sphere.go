@@ -14,7 +14,7 @@ type Sphere struct {
 }
 
 // Hit checks if a ray intersects with the sphere
-func (s Sphere) Hit(ray ray.Ray, rec *HitRecord) bool {
+func (s Sphere) Hit(ray ray.Ray, tmin float64, tmax float64, rec *HitRecord) bool {
 	// vector origin -> center
 	oc := ray.Origin.Sub(s.Center)
 	a := ray.Direction.LengthSquared()
@@ -27,14 +27,16 @@ func (s Sphere) Hit(ray ray.Ray, rec *HitRecord) bool {
 		if temp < tmax && temp > tmin {
 			rec.T = temp
 			rec.P = ray.Position(rec.T)
-			rec.Normal = rec.P.Sub(s.Center).ScalarDiv(s.Radius)
+			outwardNormal := rec.P.Sub(s.Center).ScalarDiv(s.Radius)
+			rec.SetFaceNormal(ray, outwardNormal)
 			return true
 		}
 		temp = (-halfB + root) / a
 		if temp < tmax && temp > tmin {
 			rec.T = temp
 			rec.P = ray.Position(rec.T)
-			rec.Normal = rec.P.Sub(s.Center).ScalarDiv(s.Radius)
+			outwardNormal := rec.P.Sub(s.Center).ScalarDiv(s.Radius)
+			rec.SetFaceNormal(ray, outwardNormal)
 			return true
 		}
 	}
