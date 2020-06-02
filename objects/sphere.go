@@ -9,8 +9,9 @@ import (
 
 // Sphere represents a sphere in space
 type Sphere struct {
-	Center vec3.Point
-	Radius float64
+	Center vec3.Point // Center of sphere
+	Radius float64    // Radius of sphere
+	Mat    Material   // Mat material the sphere is made of
 }
 
 // Hit checks if a ray intersects with the sphere
@@ -29,6 +30,7 @@ func (s Sphere) Hit(ray ray.Ray, tmin float64, tmax float64, rec *HitRecord) boo
 			rec.P = ray.Position(rec.T)
 			outwardNormal := rec.P.Sub(s.Center).ScalarDiv(s.Radius)
 			rec.SetFaceNormal(ray, outwardNormal)
+			rec.Material = s.Mat
 			return true
 		}
 		temp = (-halfB + root) / a
@@ -37,6 +39,7 @@ func (s Sphere) Hit(ray ray.Ray, tmin float64, tmax float64, rec *HitRecord) boo
 			rec.P = ray.Position(rec.T)
 			outwardNormal := rec.P.Sub(s.Center).ScalarDiv(s.Radius)
 			rec.SetFaceNormal(ray, outwardNormal)
+			rec.Material = s.Mat
 			return true
 		}
 	}

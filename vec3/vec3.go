@@ -79,3 +79,8 @@ func (v Vec3) Cross(other Vec3) Vec3 {
 func (v Vec3) Unit() Vec3 {
 	return v.ScalarDiv(v.Length())
 }
+
+// Reflect returns the vector resulting from reflecting off a material
+func Reflect(v Vec3, normal Vec3) Vec3 {
+	return v.Sub(normal.ScalarMul(v.Dot(normal) * 2))
+}

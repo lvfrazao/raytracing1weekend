@@ -9,6 +9,7 @@ import (
 	"github.com/vfrazao-ns1/raytracing1weekend/camera"
 	"github.com/vfrazao-ns1/raytracing1weekend/objects"
 	"github.com/vfrazao-ns1/raytracing1weekend/ray"
+	"github.com/vfrazao-ns1/raytracing1weekend/utils"
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
 )
 
@@ -35,8 +36,50 @@ func main() {
 	pixels := make([]string, numPixels)
 
 	world := new(objects.HittableList)
-	world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5})
-	world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: -100.5, Z: -1}, Radius: 100})
+	world.Add(
+		objects.Sphere{
+			Center: vec3.Point{X: 0, Y: 0, Z: -1},
+			Radius: 0.5,
+			Mat: objects.Lambertian{
+				Albedo: vec3.Color{X: 0.7, Y: 0.3, Z: 0.3},
+			},
+		},
+	)
+
+	world.Add(
+		objects.Sphere{
+			Center: vec3.Point{X: 0, Y: -100.5, Z: -1},
+			Radius: 100,
+			Mat: objects.Lambertian{
+				Albedo: vec3.Color{X: 0.8, Y: 0.8, Z: 0},
+			},
+		},
+	)
+
+	world.Add(
+		objects.Sphere{
+			Center: vec3.Point{X: 1, Y: 0, Z: -1},
+			Radius: 0.5,
+			Mat: objects.Metal{
+				Albedo: vec3.Color{X: 0.8, Y: 0.6, Z: 0.2},
+				Fuzz:   0.8,
+			},
+		},
+	)
+
+	world.Add(
+		objects.Sphere{
+			Center: vec3.Point{X: -1, Y: 0, Z: -1},
+			Radius: 0.5,
+			Mat: objects.Metal{
+				Albedo: vec3.Color{X: 0.9, Y: 0.9, Z: 0.9},
+				Fuzz:   0.2,
+			},
+		},
+	)
+
+	// world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5})
+	// world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: -100.5, Z: -1}, Radius: 100})
 
 	cam := camera.InitCamera()
 
@@ -49,8 +92,8 @@ func main() {
 
 			pixel := vec3.Color{X: 0, Y: 0, Z: 0}
 			for s := 0; s < samplesPerPixel; s++ {
-				u := (float64(i) + randomDouble()) / float64(imgWidth-1)
-				v := (float64(j) + randomDouble()) / float64(imgHeight-1)
+				u := (float64(i) + utils.RandomDouble()) / float64(imgWidth-1)
+				v := (float64(j) + utils.RandomDouble()) / float64(imgHeight-1)
 				ray := cam.GetRay(u, v)
 				pixel = pixel.Add(RayColor(ray, world, maxDepth))
 			}
@@ -73,9 +116,12 @@ func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
 	tmin := 0.001
 	tmax := math.Inf(1)
 	if world.Hit(r, tmin, tmax, hitRec) {
-		// target := hitRec.P.Add(hitRec.Normal).Add(randomUnitVector())
-		target := hitRec.P.Add(randomInHemisphere(hitRec.Normal))
-		return RayColor(ray.Ray{Origin: hitRec.P, Direction: target.Sub(hitRec.P)}, world, depth-1).ScalarMul(0.5)
+		scattered := new(ray.Ray)
+		attenuation := new(vec3.Color)
+		if hitRec.Material.Scatter(r, *hitRec, attenuation, scattered) {
+			return attenuation.Mul(RayColor(*scattered, world, depth-1))
+		}
+		return vec3.Color{X: 0, Y: 0, Z: 0}
 	}
 
 	// If no hits then the color == background
