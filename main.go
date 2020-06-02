@@ -26,7 +26,7 @@ func main() {
 	}
 	defer f.Close()
 
-	imgWidth := 3840
+	imgWidth := 384
 	aspect := 16.0 / 9.0
 	imgHeight := int(float64(imgWidth) / aspect)
 	samplesPerPixel := 100
@@ -41,8 +41,11 @@ func main() {
 			Center: vec3.Point{X: 0, Y: 0, Z: -1},
 			Radius: 0.5,
 			Mat: objects.Lambertian{
-				Albedo: vec3.Color{X: 0.7, Y: 0.3, Z: 0.3},
+				Albedo: vec3.Color{X: 0.1, Y: 0.2, Z: 0.5},
 			},
+			// Mat: objects.DiElectric{
+			// 	RefIndex: 1.5, // Glass
+			// },
 		},
 	)
 
@@ -62,8 +65,11 @@ func main() {
 			Radius: 0.5,
 			Mat: objects.Metal{
 				Albedo: vec3.Color{X: 0.8, Y: 0.6, Z: 0.2},
-				Fuzz:   0.8,
+				Fuzz:   0.0,
 			},
+			// Mat: objects.DiElectric{
+			// 	RefIndex: 1.5, // Glass
+			// },
 		},
 	)
 
@@ -71,15 +77,25 @@ func main() {
 		objects.Sphere{
 			Center: vec3.Point{X: -1, Y: 0, Z: -1},
 			Radius: 0.5,
-			Mat: objects.Metal{
-				Albedo: vec3.Color{X: 0.9, Y: 0.9, Z: 0.9},
-				Fuzz:   0.2,
+			// Mat: objects.Metal{
+			// 	Albedo: vec3.Color{X: 0.9, Y: 0.9, Z: 0.9},
+			// 	Fuzz:   0.2,
+			// },
+			Mat: objects.DiElectric{
+				RefIndex: 1.5, // Glass
 			},
 		},
 	)
 
-	// world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: 0, Z: -1}, Radius: 0.5})
-	// world.Add(objects.Sphere{Center: vec3.Point{X: 0, Y: -100.5, Z: -1}, Radius: 100})
+	world.Add(
+		objects.Sphere{
+			Center: vec3.Point{X: -1, Y: 0, Z: -1},
+			Radius: -0.45,
+			Mat: objects.DiElectric{
+				RefIndex: 1.5, // Glass
+			},
+		},
+	)
 
 	cam := camera.InitCamera()
 

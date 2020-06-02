@@ -84,3 +84,12 @@ func (v Vec3) Unit() Vec3 {
 func Reflect(v Vec3, normal Vec3) Vec3 {
 	return v.Sub(normal.ScalarMul(v.Dot(normal) * 2))
 }
+
+// Refract returns the vector resulting from refracting off a material
+func Refract(uv Vec3, normal Vec3, etaiOverEtat float64) Vec3 {
+	cosTheta := uv.Negate().Dot(normal)
+	// cosTheta := utils.Fmin(uv.Negate().Dot(normal))
+	rOutParallel := normal.ScalarMul(cosTheta).Add(uv).ScalarMul(etaiOverEtat)
+	rOutPerp := normal.ScalarMul(-math.Sqrt(1 - rOutParallel.LengthSquared()))
+	return rOutParallel.Add(rOutPerp)
+}

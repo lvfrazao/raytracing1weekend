@@ -61,3 +61,11 @@ func RandomInHemisphere(normal vec3.Vec3) vec3.Vec3 {
 	}
 	return inUnitSphere.Negate()
 }
+
+// Fmin returns the smaller of two float values
+func Fmin(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
+}

@@ -1,6 +1,8 @@
 package objects
 
 import (
+	"math"
+
 	"github.com/vfrazao-ns1/raytracing1weekend/ray"
 	"github.com/vfrazao-ns1/raytracing1weekend/utils"
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
@@ -42,4 +44,52 @@ func (m Metal) Scatter(rIn ray.Ray, rec HitRecord, attenuation *vec3.Color, scat
 
 	*attenuation = m.Albedo
 	return scattered.Direction.Dot(rec.Normal) > 0
+}
+
+// DiElectric materials like glass and water
+type DiElectric struct {
+	RefIndex float64
+}
+
+// Scatter implements `Material` interface for DiElectric
+func (d DiElectric) Scatter(rIn ray.Ray, rec HitRecord, attenuation *vec3.Color, scattered *ray.Ray) bool {
+	*attenuation = vec3.Color{X: 1, Y: 1, Z: 1}
+	var etaiOverEtat float64
+
+	if rec.FrontFace {
+		etaiOverEtat = 1.0 / d.RefIndex
+	} else {
+		etaiOverEtat = d.RefIndex
+	}
+	unitDirection := rIn.Direction.Unit()
+
+	cosTheta := utils.Fmin(unitDirection.Negate().Dot(rec.Normal), 1.0)
+	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
+
+	if etaiOverEtat*sinTheta > 1.0 || utils.RandomDouble() < d.schlick(cosTheta, etaiOverEtat) {
+		reflected := vec3.Reflect(unitDirection, rec.Normal)
+		scattered.Origin = rec.P
+		scattered.Direction = reflected
+		return true
+	}
+
+	// This should just be part of the previous if statment honestly
+	// reflectProb := d.schlick(cosTheta, etaiOverEtat)
+	// if utils.RandomDouble() < reflectProb {
+	// 	reflected := vec3.Reflect(unitDirection, rec.Normal)
+	// 	scattered.Origin = rec.P
+	// 	scattered.Direction = reflected
+	// 	return true
+	// }
+
+	refracted := vec3.Refract(unitDirection, rec.Normal, etaiOverEtat)
+	scattered.Origin = rec.P
+	scattered.Direction = refracted
+	return true
+}
+
+func (d DiElectric) schlick(cosine, refindex float64) float64 {
+	r0 := (1 - refindex) / (1 + refindex)
+	r0 = r0 * r0
+	return r0 * (1 - r0) * math.Pow((1-cosine), 5)
 }
