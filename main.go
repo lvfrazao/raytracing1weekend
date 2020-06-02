@@ -15,7 +15,7 @@ import (
 
 const (
 	maxColor = 255
-	fileName = "render.ppm"
+	fileName = "render1.ppm"
 )
 
 func main() {
@@ -35,6 +35,10 @@ func main() {
 	numPixels := (imgHeight * imgWidth)
 	pixels := make([]string, numPixels)
 
+	lookfrom := vec3.Point{X: -2, Y: 2, Z: 1}
+	lookat := vec3.Point{X: 0, Y: 0, Z: -1}
+	vup := vec3.Vec3{X: 0, Y: 1, Z: 0}
+	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight))
 	world := new(objects.HittableList)
 	world.Add(
 		objects.Sphere{
@@ -96,8 +100,6 @@ func main() {
 			},
 		},
 	)
-
-	cam := camera.InitCamera()
 
 	fmt.Fprintf(f, "P3\n")
 	fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
