@@ -69,3 +69,15 @@ func Fmin(a, b float64) float64 {
 	}
 	return b
 }
+
+// RandomInUnitDisk used for the "defocus blur"
+func RandomInUnitDisk() vec3.Vec3 {
+	var p vec3.Vec3
+	for {
+		p = vec3.Vec3{X: RandomDoubleBetween(-1, 1), Y: RandomDoubleBetween(-1, 1), Z: 0}
+		if p.LengthSquared() >= 1 {
+			continue
+		}
+		return p
+	}
+}

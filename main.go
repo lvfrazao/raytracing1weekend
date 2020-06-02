@@ -35,10 +35,12 @@ func main() {
 	numPixels := (imgHeight * imgWidth)
 	pixels := make([]string, numPixels)
 
-	lookfrom := vec3.Point{X: -2, Y: 2, Z: 1}
+	lookfrom := vec3.Point{X: 3, Y: 3, Z: 2}
 	lookat := vec3.Point{X: 0, Y: 0, Z: -1}
 	vup := vec3.Vec3{X: 0, Y: 1, Z: 0}
-	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight))
+	distToFocus := lookfrom.Sub(lookat).Length()
+	aperture := 2.0
+	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight), aperture, distToFocus)
 	world := new(objects.HittableList)
 	world.Add(
 		objects.Sphere{

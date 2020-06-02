@@ -25,6 +25,11 @@ type Camera struct {
 	ViewPortWidth  float64    // ViewPortWidth constrained by the aspect ratio and height
 	FocalLength    float64    // FocalLength usually 1.0
 
+	U          vec3.Vec3
+	V          vec3.Vec3
+	W          vec3.Vec3
+	LensRadius float64
+
 	Origin     vec3.Point // Origin usually (0, 0, 0)
 	Horizontal vec3.Vec3  // Horizontal line: <width, 0, 0>
 	Vertical   vec3.Vec3  // Vertical line <0, height, 0>
@@ -32,7 +37,7 @@ type Camera struct {
 }
 
 // InitCamera Creates and initializes a Camera struct
-func InitCamera(lookfrom vec3.Point, lookat vec3.Point, vup vec3.Vec3, vfov, aspect float64) *Camera {
+func InitCamera(lookfrom vec3.Point, lookat vec3.Point, vup vec3.Vec3, vfov, aspect, aperture, focusDist float64) *Camera {
 	c := new(Camera)
 
 	c.LookFrom = lookfrom
@@ -47,19 +52,25 @@ func InitCamera(lookfrom vec3.Point, lookat vec3.Point, vup vec3.Vec3, vfov, asp
 	c.ViewPortWidth = c.AspectRatio * c.ViewPortHeight
 	c.FocalLength = focalLength
 
-	w := lookfrom.Sub(lookat).Unit()
-	u := vup.Cross(w).Unit()
-	v := w.Cross(u)
+	c.W = lookfrom.Sub(lookat).Unit()
+	c.U = vup.Cross(c.W).Unit()
+	c.V = c.W.Cross(c.U)
 
 	c.Origin = lookfrom
-	c.Horizontal = u.ScalarMul(c.ViewPortWidth)
-	c.Vertical = v.ScalarMul(c.ViewPortHeight)
-	c.LowerLeft = c.Origin.Sub(c.Horizontal.ScalarDiv(2)).Sub(c.Vertical.ScalarDiv(2)).Sub(w)
+	c.Horizontal = c.U.ScalarMul(c.ViewPortWidth).ScalarMul(focusDist)
+	c.Vertical = c.V.ScalarMul(c.ViewPortHeight).ScalarMul(focusDist)
+	c.LowerLeft = c.Origin.Sub(c.Horizontal.ScalarDiv(2)).Sub(c.Vertical.ScalarDiv(2)).Sub(c.W.ScalarMul(focusDist))
+	c.LensRadius = aperture / 2.0
 
 	return c
 }
 
 // GetRay returns the ray from our camera
-func (c Camera) GetRay(u, v float64) ray.Ray {
-	return ray.Ray{Origin: c.Origin, Direction: c.LowerLeft.Add((c.Horizontal.ScalarMul(u))).Add(c.Vertical.ScalarMul(v).Sub(c.Origin))}
+func (c Camera) GetRay(s, t float64) ray.Ray {
+	rd := utils.RandomInUnitDisk().ScalarMul(c.LensRadius)
+	offset := c.U.ScalarMul(rd.X).Add(c.V.ScalarMul(rd.Y))
+	return ray.Ray{
+		Origin:    c.Origin.Add(offset),
+		Direction: c.LowerLeft.Add((c.Horizontal.ScalarMul(s))).Add(c.Vertical.ScalarMul(t)).Sub(c.Origin).Sub(offset),
+	}
 }
