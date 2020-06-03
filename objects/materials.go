@@ -73,15 +73,6 @@ func (d DiElectric) Scatter(rIn ray.Ray, rec HitRecord, attenuation *vec3.Color,
 		return true
 	}
 
-	// This should just be part of the previous if statment honestly
-	// reflectProb := d.schlick(cosTheta, etaiOverEtat)
-	// if utils.RandomDouble() < reflectProb {
-	// 	reflected := vec3.Reflect(unitDirection, rec.Normal)
-	// 	scattered.Origin = rec.P
-	// 	scattered.Direction = reflected
-	// 	return true
-	// }
-
 	refracted := vec3.Refract(unitDirection, rec.Normal, etaiOverEtat)
 	scattered.Origin = rec.P
 	scattered.Direction = refracted

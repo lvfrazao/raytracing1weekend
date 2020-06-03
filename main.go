@@ -15,7 +15,7 @@ import (
 
 const (
 	maxColor = 255
-	fileName = "render1.ppm"
+	fileName = "render.ppm"
 )
 
 func main() {
@@ -35,73 +35,14 @@ func main() {
 	numPixels := (imgHeight * imgWidth)
 	pixels := make([]string, numPixels)
 
-	lookfrom := vec3.Point{X: 3, Y: 3, Z: 2}
-	lookat := vec3.Point{X: 0, Y: 0, Z: -1}
+	lookfrom := vec3.Point{X: 13, Y: 2, Z: 3}
+	lookat := vec3.Point{X: 0, Y: 0, Z: 0}
 	vup := vec3.Vec3{X: 0, Y: 1, Z: 0}
-	distToFocus := lookfrom.Sub(lookat).Length()
-	aperture := 2.0
+	distToFocus := 10.0
+	aperture := 0.1
 	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight), aperture, distToFocus)
-	world := new(objects.HittableList)
-	world.Add(
-		objects.Sphere{
-			Center: vec3.Point{X: 0, Y: 0, Z: -1},
-			Radius: 0.5,
-			Mat: objects.Lambertian{
-				Albedo: vec3.Color{X: 0.1, Y: 0.2, Z: 0.5},
-			},
-			// Mat: objects.DiElectric{
-			// 	RefIndex: 1.5, // Glass
-			// },
-		},
-	)
 
-	world.Add(
-		objects.Sphere{
-			Center: vec3.Point{X: 0, Y: -100.5, Z: -1},
-			Radius: 100,
-			Mat: objects.Lambertian{
-				Albedo: vec3.Color{X: 0.8, Y: 0.8, Z: 0},
-			},
-		},
-	)
-
-	world.Add(
-		objects.Sphere{
-			Center: vec3.Point{X: 1, Y: 0, Z: -1},
-			Radius: 0.5,
-			Mat: objects.Metal{
-				Albedo: vec3.Color{X: 0.8, Y: 0.6, Z: 0.2},
-				Fuzz:   0.0,
-			},
-			// Mat: objects.DiElectric{
-			// 	RefIndex: 1.5, // Glass
-			// },
-		},
-	)
-
-	world.Add(
-		objects.Sphere{
-			Center: vec3.Point{X: -1, Y: 0, Z: -1},
-			Radius: 0.5,
-			// Mat: objects.Metal{
-			// 	Albedo: vec3.Color{X: 0.9, Y: 0.9, Z: 0.9},
-			// 	Fuzz:   0.2,
-			// },
-			Mat: objects.DiElectric{
-				RefIndex: 1.5, // Glass
-			},
-		},
-	)
-
-	world.Add(
-		objects.Sphere{
-			Center: vec3.Point{X: -1, Y: 0, Z: -1},
-			Radius: -0.45,
-			Mat: objects.DiElectric{
-				RefIndex: 1.5, // Glass
-			},
-		},
-	)
+	world := RandomWorld()
 
 	fmt.Fprintf(f, "P3\n")
 	fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
