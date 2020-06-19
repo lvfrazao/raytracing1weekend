@@ -1,3 +1,5 @@
 *.ppm
+render*.png
+*.exe
 raytracing1weekend
 *.xcf
