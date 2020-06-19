@@ -104,7 +104,7 @@ func RandomWorld() objects.HittableList {
 					fuzz := utils.RandomDoubleBetween(0, 0.5)
 					sphereMaterial = objects.Metal{Albedo: albedo, Fuzz: fuzz}
 				default:
-					sphereMaterial = objects.DiElectric{1.5}
+					sphereMaterial = objects.DiElectric{RefIndex: 1.5}
 
 				}
 				world.Add(
