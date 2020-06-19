@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strings"
+
+	"github.com/vfrazao-ns1/raytracing1weekend/renderer"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/camera"
 	"github.com/vfrazao-ns1/raytracing1weekend/objects"
@@ -15,25 +16,25 @@ import (
 
 const (
 	maxColor = 255
-	fileName = "render.ppm"
 )
 
 func main() {
-	f, err := os.Create(fileName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error openning file for render: %s", err)
-		os.Exit(1)
-	}
-	defer f.Close()
+	fileName := os.Args[1]
+	// f, err := os.Create(fileName)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error opening file for render: %s", err)
+	// 	os.Exit(1)
+	// }
+	// defer f.Close()
 
-	imgWidth := 384
+	imgWidth := 380
 	aspect := 16.0 / 9.0
 	imgHeight := int(float64(imgWidth) / aspect)
 	samplesPerPixel := 100
 	maxDepth := 50
 
 	numPixels := (imgHeight * imgWidth)
-	pixels := make([]string, numPixels)
+	pixels := make([]renderer.Pixel, numPixels)
 
 	lookfrom := vec3.Point{X: 13, Y: 2, Z: 3}
 	lookat := vec3.Point{X: 0, Y: 0, Z: 0}
@@ -44,25 +45,37 @@ func main() {
 
 	world := RandomWorld()
 
-	fmt.Fprintf(f, "P3\n")
-	fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
-	fmt.Fprintf(f, "%d\n", maxColor)
+	// fmt.Fprintf(f, "P3\n")
+	// fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
+	// fmt.Fprintf(f, "%d\n", maxColor)
 	for j := (imgHeight - 1); j >= 0; j-- {
 		fmt.Fprintf(os.Stderr, "\rScanlines remaining: %10d", j)
 		for i := 0; i < imgWidth; i++ {
 
-			pixel := vec3.Color{X: 0, Y: 0, Z: 0}
+			pixel := renderer.Pixel{
+				Color:    vec3.Color{X: 0, Y: 0, Z: 0},
+				Position: vec3.Point{X: float64(i), Y: float64(imgHeight - 1 - j), Z: 0},
+			}
 			for s := 0; s < samplesPerPixel; s++ {
 				u := (float64(i) + utils.RandomDouble()) / float64(imgWidth-1)
 				v := (float64(j) + utils.RandomDouble()) / float64(imgHeight-1)
 				ray := cam.GetRay(u, v)
-				pixel = pixel.Add(RayColor(ray, world, maxDepth))
+				pixel.Color = pixel.Color.Add(RayColor(ray, world, maxDepth))
 			}
 
-			pixels[(imgWidth*(imgHeight-1-j))+i] = pixel.ColorString(samplesPerPixel)
+			// pixels[(imgWidth*(imgHeight-1-j))+i] = pixel.ColorString(samplesPerPixel)
+			pixels[(imgWidth*(imgHeight-1-j))+i] = pixel
+			// fmt.Fprintf(os.Stderr, "%v")
 		}
 	}
-	fmt.Fprintf(f, strings.Join(pixels, "\n"))
+	// fmt.Fprintf(f, strings.Join(pixels, "\n"))
+	pngRenderer := renderer.PNGRenderer{
+		ImageWidth:      imgWidth,
+		ImageHeight:     imgHeight,
+		ImagePixels:     pixels,
+		SamplesPerPixel: samplesPerPixel,
+	}
+	pngRenderer.Render(fileName)
 	fmt.Fprintf(os.Stderr, "\nDone\n")
 }
 

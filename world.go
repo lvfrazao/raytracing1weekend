@@ -1,6 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
+	"os"
+	"time"
+
 	"github.com/vfrazao-ns1/raytracing1weekend/objects"
 	"github.com/vfrazao-ns1/raytracing1weekend/utils"
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
@@ -62,6 +67,10 @@ func staticScene() objects.HittableList {
 }
 
 func RandomWorld() objects.HittableList {
+	randSeed := time.Now().UnixNano()
+	fmt.Fprintf(os.Stderr, "Using %v as random seed\n", randSeed)
+	rand.Seed(randSeed)
+
 	world := new(objects.HittableList)
 
 	ground := objects.Sphere{
@@ -113,7 +122,7 @@ func RandomWorld() objects.HittableList {
 		objects.Sphere{
 			Center: vec3.Point{X: 0, Y: 1, Z: 0},
 			Radius: 1.0,
-			Mat: objects.DiElectric{RefIndex: 1.5},
+			Mat:    objects.DiElectric{RefIndex: 1.5},
 		},
 	)
 
@@ -121,7 +130,7 @@ func RandomWorld() objects.HittableList {
 		objects.Sphere{
 			Center: vec3.Point{X: -4, Y: 1, Z: 0},
 			Radius: 1.0,
-			Mat: objects.Lambertian{Albedo: vec3.Color{X: 0.4, Y: 0.2, Z: 0.1}},
+			Mat:    objects.Lambertian{Albedo: vec3.Color{X: 0.4, Y: 0.2, Z: 0.1}},
 		},
 	)
 
@@ -131,7 +140,7 @@ func RandomWorld() objects.HittableList {
 			Radius: 1.0,
 			Mat: objects.Metal{
 				Albedo: vec3.Color{X: 0.7, Y: 0.6, Z: 0.5},
-				Fuzz: 0.0,
+				Fuzz:   0.0,
 			},
 		},
 	)
