@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/renderer"
@@ -24,6 +25,15 @@ func main() {
 	fileName := os.Args[1]
 
 	imgWidth := 380
+	var err error
+	if len(os.Args) == 3 {
+		imgWidth, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to parse image size quitting! - %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	aspect := 16.0 / 9.0
 	imgHeight := int(float64(imgWidth) / aspect)
 	samplesPerPixel := 100
@@ -61,6 +71,7 @@ func main() {
 		}
 		pixels[i] = <-results
 	}
+	progress(numPixels, numPixels, start)
 	close(jobs)
 
 	pngRenderer := renderer.PNGRenderer{
