@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime"
+	"time"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/renderer"
 
@@ -20,12 +22,6 @@ const (
 
 func main() {
 	fileName := os.Args[1]
-	// f, err := os.Create(fileName)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error opening file for render: %s", err)
-	// 	os.Exit(1)
-	// }
-	// defer f.Close()
 
 	imgWidth := 380
 	aspect := 16.0 / 9.0
@@ -34,7 +30,6 @@ func main() {
 	maxDepth := 50
 
 	numPixels := (imgHeight * imgWidth)
-	pixels := make([]renderer.Pixel, numPixels)
 
 	lookfrom := vec3.Point{X: 13, Y: 2, Z: 3}
 	lookat := vec3.Point{X: 0, Y: 0, Z: 0}
@@ -44,31 +39,30 @@ func main() {
 	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight), aperture, distToFocus)
 
 	world := RandomWorld()
+	numWorkers := runtime.NumCPU()
+	jobs := make(chan job, numPixels)
+	results := make(chan renderer.Pixel)
+	start := time.Now()
 
-	// fmt.Fprintf(f, "P3\n")
-	// fmt.Fprintf(f, "%d %d\n", imgWidth, imgHeight)
-	// fmt.Fprintf(f, "%d\n", maxColor)
+	for i := 0; i < numWorkers; i++ {
+		go worker(jobs, results, imgHeight, imgWidth, samplesPerPixel, world, maxDepth, cam)
+	}
+
 	for j := (imgHeight - 1); j >= 0; j-- {
-		fmt.Fprintf(os.Stderr, "\rScanlines remaining: %10d", j)
 		for i := 0; i < imgWidth; i++ {
-
-			pixel := renderer.Pixel{
-				Color:    vec3.Color{X: 0, Y: 0, Z: 0},
-				Position: vec3.Point{X: float64(i), Y: float64(imgHeight - 1 - j), Z: 0},
-			}
-			for s := 0; s < samplesPerPixel; s++ {
-				u := (float64(i) + utils.RandomDouble()) / float64(imgWidth-1)
-				v := (float64(j) + utils.RandomDouble()) / float64(imgHeight-1)
-				ray := cam.GetRay(u, v)
-				pixel.Color = pixel.Color.Add(RayColor(ray, world, maxDepth))
-			}
-
-			// pixels[(imgWidth*(imgHeight-1-j))+i] = pixel.ColorString(samplesPerPixel)
-			pixels[(imgWidth*(imgHeight-1-j))+i] = pixel
-			// fmt.Fprintf(os.Stderr, "%v")
+			jobs <- job{i: i, j: j}
 		}
 	}
-	// fmt.Fprintf(f, strings.Join(pixels, "\n"))
+
+	pixels := make([]renderer.Pixel, numPixels)
+	for i := 0; i < numPixels; i++ {
+		if i%1000 == 0 {
+			progress(i, numPixels, start)
+		}
+		pixels[i] = <-results
+	}
+	close(jobs)
+
 	pngRenderer := renderer.PNGRenderer{
 		ImageWidth:      imgWidth,
 		ImageHeight:     imgHeight,
@@ -102,4 +96,47 @@ func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
 	unitDirection := r.Direction.Unit()
 	t := 0.5 * (unitDirection.Y + 1.0)
 	return vec3.Color{X: 1, Y: 1, Z: 1}.ScalarMul(1 - t).Add(vec3.Color{X: 0.5, Y: 0.7, Z: 1}.ScalarMul(t))
+}
+
+type job struct {
+	i int
+	j int
+}
+
+func worker(jobs <-chan job, results chan<- renderer.Pixel, height int, width int, samplesPerPixel int, world objects.HittableList, maxDepth int, cam *camera.Camera) {
+	for job := range jobs {
+		pixel := renderer.Pixel{
+			Color:    vec3.Color{X: 0, Y: 0, Z: 0},
+			Position: vec3.Point{X: float64(job.i), Y: float64(height - 1 - job.j), Z: 0},
+		}
+		for s := 0; s < samplesPerPixel; s++ {
+			u := (float64(job.i) + utils.RandomDouble()) / float64(width-1)
+			v := (float64(job.j) + utils.RandomDouble()) / float64(height-1)
+			ray := cam.GetRay(u, v)
+			pixel.Color = pixel.Color.Add(RayColor(ray, world, maxDepth))
+		}
+		results <- pixel
+	}
+}
+
+func progress(done, total int, start time.Time) {
+	barSize := 70
+	pctComplete := float64(done) / float64(total)
+	doneBars := int(pctComplete * float64(barSize))
+	elapsed := time.Since(start).Seconds()
+	rate := float64(done) / elapsed
+	eta := float64(total-done) / rate
+
+	fmt.Fprintf(os.Stderr, "\r[")
+	for i := 0; i < doneBars; i++ {
+		fmt.Fprintf(os.Stderr, "#")
+	}
+	for i := 0; i < (barSize - doneBars); i++ {
+		fmt.Fprintf(os.Stderr, " ")
+	}
+	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.2f - Elapsed: %6d - ETA: %6ds", pctComplete*100, rate, int(elapsed), int(eta))
+
+	for i := 0; i < 20; i++ {
+		fmt.Fprintf(os.Stderr, " ")
+	}
 }
