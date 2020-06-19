@@ -51,7 +51,7 @@ func main() {
 	world := RandomWorld()
 	numWorkers := runtime.NumCPU()
 	jobs := make(chan job, numPixels)
-	results := make(chan renderer.Pixel)
+	results := make(chan renderer.Pixel, numPixels)
 	start := time.Now()
 
 	for i := 0; i < numWorkers; i++ {
@@ -66,7 +66,7 @@ func main() {
 
 	pixels := make([]renderer.Pixel, numPixels)
 	for i := 0; i < numPixels; i++ {
-		if i%1000 == 0 {
+		if i%1000 == 0 && i > 0 {
 			progress(i, numPixels, start)
 		}
 		pixels[i] = <-results
@@ -147,7 +147,7 @@ func progress(done, total int, start time.Time) {
 	}
 	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.2f - Elapsed: %6d - ETA: %6ds", pctComplete*100, rate, int(elapsed), int(eta))
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 5; i++ {
 		fmt.Fprintf(os.Stderr, " ")
 	}
 }
