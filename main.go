@@ -50,18 +50,13 @@ func main() {
 
 	world := RandomWorld()
 	numWorkers := runtime.NumCPU()
-	jobs := make(chan job, numPixels)
+	jobs := make(chan job, numWorkers*10)
 	results := make(chan renderer.Pixel, numPixels)
 	start := time.Now()
 
+	go fillJobsQueue(imgHeight, imgWidth, jobs)
 	for i := 0; i < numWorkers; i++ {
 		go worker(jobs, results, imgHeight, imgWidth, samplesPerPixel, world, maxDepth, cam)
-	}
-
-	for j := (imgHeight - 1); j >= 0; j-- {
-		for i := 0; i < imgWidth; i++ {
-			jobs <- job{i: i, j: j}
-		}
 	}
 
 	pixels := make([]renderer.Pixel, numPixels)
@@ -112,6 +107,14 @@ func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
 type job struct {
 	i int
 	j int
+}
+
+func fillJobsQueue(height, width int, jobs chan<- job) {
+	for j := (height - 1); j >= 0; j-- {
+		for i := 0; i < width; i++ {
+			jobs <- job{i: i, j: j}
+		}
+	}
 }
 
 func worker(jobs <-chan job, results chan<- renderer.Pixel, height int, width int, samplesPerPixel int, world objects.HittableList, maxDepth int, cam *camera.Camera) {
