@@ -170,7 +170,7 @@ func progress(done, total int, start time.Time) {
 	for i := 0; i < (barSize - doneBars); i++ {
 		fmt.Fprintf(os.Stderr, " ")
 	}
-	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.2f - Elapsed: %6d - ETA: %6ds", pctComplete*100, rate, int(elapsed), int(eta))
+	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.0f - Elapsed: %6d - ETA: %6ds", pctComplete*100, rate, int(elapsed), int(eta))
 
 	for i := 0; i < 5; i++ {
 		fmt.Fprintf(os.Stderr, " ")
