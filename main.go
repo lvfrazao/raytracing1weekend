@@ -54,9 +54,20 @@ func main() {
 	results := make(chan renderer.Pixel, numPixels)
 	start := time.Now()
 
+	s := workerState{
+		jobs:     jobs,
+		results:  results,
+		height:   imgHeight,
+		width:    imgWidth,
+		spp:      samplesPerPixel,
+		world:    world,
+		maxDepth: maxDepth,
+		cam:      cam,
+	}
+
 	go fillJobsQueue(imgHeight, imgWidth, jobs)
 	for i := 0; i < numWorkers; i++ {
-		go worker(jobs, results, imgHeight, imgWidth, samplesPerPixel, world, maxDepth, cam)
+		go worker(s)
 	}
 
 	pixels := make([]renderer.Pixel, numPixels)
@@ -104,6 +115,17 @@ func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
 	return vec3.Color{X: 1, Y: 1, Z: 1}.ScalarMul(1 - t).Add(vec3.Color{X: 0.5, Y: 0.7, Z: 1}.ScalarMul(t))
 }
 
+type workerState struct {
+	jobs     <-chan job
+	results  chan<- renderer.Pixel
+	height   int
+	width    int
+	spp      int // samples per pixel
+	world    objects.HittableList
+	maxDepth int
+	cam      *camera.Camera
+}
+
 type job struct {
 	i int
 	j int
@@ -117,19 +139,19 @@ func fillJobsQueue(height, width int, jobs chan<- job) {
 	}
 }
 
-func worker(jobs <-chan job, results chan<- renderer.Pixel, height int, width int, samplesPerPixel int, world objects.HittableList, maxDepth int, cam *camera.Camera) {
-	for job := range jobs {
+func worker(state workerState) {
+	for job := range state.jobs {
 		pixel := renderer.Pixel{
 			Color:    vec3.Color{X: 0, Y: 0, Z: 0},
-			Position: vec3.Point{X: float64(job.i), Y: float64(height - 1 - job.j), Z: 0},
+			Position: vec3.Point{X: float64(job.i), Y: float64(state.height - 1 - job.j), Z: 0},
 		}
-		for s := 0; s < samplesPerPixel; s++ {
-			u := (float64(job.i) + utils.RandomDouble()) / float64(width-1)
-			v := (float64(job.j) + utils.RandomDouble()) / float64(height-1)
-			ray := cam.GetRay(u, v)
-			pixel.Color = pixel.Color.Add(RayColor(ray, world, maxDepth))
+		for s := 0; s < state.spp; s++ {
+			u := (float64(job.i) + utils.RandomDouble()) / float64(state.width-1)
+			v := (float64(job.j) + utils.RandomDouble()) / float64(state.height-1)
+			ray := state.cam.GetRay(u, v)
+			pixel.Color = pixel.Color.Add(RayColor(ray, state.world, state.maxDepth))
 		}
-		results <- pixel
+		state.results <- pixel
 	}
 }
 
