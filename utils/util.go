@@ -2,9 +2,7 @@ package utils
 
 import (
 	"math"
-
 	rand "lukechampine.com/frand"
-
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
 )
 
