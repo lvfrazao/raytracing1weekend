@@ -1,11 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"math/rand"
-	"os"
-	"time"
-
 	"github.com/vfrazao-ns1/raytracing1weekend/objects"
 	"github.com/vfrazao-ns1/raytracing1weekend/utils"
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
@@ -67,10 +62,6 @@ func staticScene() objects.HittableList {
 }
 
 func RandomWorld() objects.HittableList {
-	randSeed := time.Now().UnixNano()
-	fmt.Fprintf(os.Stderr, "Using %v as random seed\n", randSeed)
-	rand.Seed(randSeed)
-
 	world := new(objects.HittableList)
 
 	ground := objects.Sphere{
