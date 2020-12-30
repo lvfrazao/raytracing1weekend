@@ -1,15 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"strconv"
 	"time"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/renderer"
@@ -27,6 +28,7 @@ const (
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
 var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
+var configFile = flag.String("config", "config.json", "Location of config file")
 
 func main() {
 	flag.Parse()
@@ -42,35 +44,19 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	posArgs := flag.Args()
-	fileName := "render.png"
-	imgWidth := 380
-	var err error
-	switch len(posArgs) {
-	case 1:
-		fileName = posArgs[0]
-	case 2:
-		fileName = posArgs[0]
-		imgWidth, err = strconv.Atoi(posArgs[1])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to parse image size quitting! - %v\n", err)
-			os.Exit(1)
-		}
+	var tracerConfig config
+	c, err := ioutil.ReadFile(*configFile)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Unable to open config: %s\n", err))
+	}
+	if err = json.Unmarshal(c, &tracerConfig); err != nil {
+		log.Fatal(fmt.Sprintf("Unable to decode config: %s\n+", err))
 	}
 
-	aspect := 16.0 / 9.0
-	imgHeight := int(float64(imgWidth) / aspect)
-	samplesPerPixel := 100
-	maxDepth := 50
+	imgHeight := int(float64(tracerConfig.ImgWidth) / tracerConfig.Aspect)
+	numPixels := (imgHeight * tracerConfig.ImgWidth)
 
-	numPixels := (imgHeight * imgWidth)
-
-	lookfrom := vec3.Point{X: 13, Y: 2, Z: 3}
-	lookat := vec3.Point{X: 0, Y: 0, Z: 0}
-	vup := vec3.Vec3{X: 0, Y: 1, Z: 0}
-	distToFocus := 10.0
-	aperture := 0.1
-	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight), aperture, distToFocus)
+	cam := camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
 
 	world := RandomWorld()
 	numWorkers := runtime.NumCPU()
@@ -82,14 +68,14 @@ func main() {
 		jobs:     jobs,
 		results:  results,
 		height:   imgHeight,
-		width:    imgWidth,
-		spp:      samplesPerPixel,
+		width:    tracerConfig.ImgWidth,
+		spp:      tracerConfig.SamplesPerPixel,
 		world:    world,
-		maxDepth: maxDepth,
+		maxDepth: tracerConfig.MaxDepth,
 		cam:      cam,
 	}
 
-	go fillJobsQueue(imgHeight, imgWidth, jobs)
+	go fillJobsQueue(imgHeight, tracerConfig.ImgWidth, jobs)
 	for i := 0; i < numWorkers; i++ {
 		go worker(s)
 	}
@@ -105,12 +91,12 @@ func main() {
 	close(jobs)
 
 	pngRenderer := renderer.PNGRenderer{
-		ImageWidth:      imgWidth,
+		ImageWidth:      tracerConfig.ImgWidth,
 		ImageHeight:     imgHeight,
 		ImagePixels:     pixels,
-		SamplesPerPixel: samplesPerPixel,
+		SamplesPerPixel: tracerConfig.SamplesPerPixel,
 	}
-	pngRenderer.Render(fileName)
+	pngRenderer.Render(tracerConfig.FileName)
 	fmt.Fprintf(os.Stderr, "\nDone\n")
 
 	if *memprofile != "" {
