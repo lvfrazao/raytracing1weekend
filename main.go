@@ -1,10 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"math"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"time"
 
@@ -21,13 +25,33 @@ const (
 	maxColor = 255
 )
 
-func main() {
-	fileName := os.Args[1]
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
+var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
 
+func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	posArgs := flag.Args()
+	fileName := "render.png"
 	imgWidth := 380
 	var err error
-	if len(os.Args) == 3 {
-		imgWidth, err = strconv.Atoi(os.Args[2])
+	switch len(posArgs) {
+	case 1:
+		fileName = posArgs[0]
+	case 2:
+		fileName = posArgs[0]
+		imgWidth, err = strconv.Atoi(posArgs[1])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to parse image size quitting! - %v\n", err)
 			os.Exit(1)
@@ -88,6 +112,18 @@ func main() {
 	}
 	pngRenderer.Render(fileName)
 	fmt.Fprintf(os.Stderr, "\nDone\n")
+
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		defer f.Close()
+		runtime.GC()
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+	}
 }
 
 // RayColor returns the ray color
