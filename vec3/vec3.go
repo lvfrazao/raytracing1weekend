@@ -14,7 +14,7 @@ type Vec3 struct {
 
 // LengthSquared length squared of the vector (duh)
 func (v Vec3) LengthSquared() float64 {
-	return (v.X * v.X) + (v.Y * v.Y) + (v.Z * v.Z)
+	return v.Dot(v)
 }
 
 // Length length of the vector (duh)
