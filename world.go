@@ -6,6 +6,10 @@ import (
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
 )
 
+func worldFromConfig(conf worldConfig) objects.HittableList {
+	return objects.HittableList{Data: conf.Static}
+}
+
 func staticScene() objects.HittableList {
 	world := new(objects.HittableList)
 	world.Add(

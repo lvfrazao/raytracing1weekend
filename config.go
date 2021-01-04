@@ -1,6 +1,9 @@
 package main
 
-import "github.com/vfrazao-ns1/raytracing1weekend/vec3"
+import (
+	"github.com/vfrazao-ns1/raytracing1weekend/objects"
+	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
+)
 
 type config struct {
 	FileName        string  // Name of file to save to render
@@ -18,4 +21,9 @@ type cameraConfig struct {
 	VFOV      float64    // Vertical field of view
 	Aperture  float64    // Camera aperture
 	FocusDist float64    // Camera focus distance
+}
+
+type worldConfig struct {
+	Random bool              // Whether to generate a random scene, overides the Static attribute
+	Static objects.Hittables // List of "Hittable" shapes
 }

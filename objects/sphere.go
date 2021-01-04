@@ -14,6 +14,33 @@ type Sphere struct {
 	Mat    Material   // Mat material the sphere is made of
 }
 
+func newSphere(obj map[string]interface{}) (*Sphere, error) {
+	// I hate this so so much
+	s := Sphere{}
+	var err error
+
+	if c, ok := obj["center"].(map[string]interface{}); ok {
+		s.Center = vec3.Point{
+			X: c["x"].(float64),
+			Y: c["y"].(float64),
+			Z: c["z"].(float64),
+		}
+	}
+
+	if r, ok := obj["radius"].(float64); ok {
+		s.Radius = r
+	}
+
+	if matInter, ok := obj["mat"].(map[string]interface{}); ok {
+		s.Mat, err = newMaterial(matInter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &s, nil
+}
+
 // Hit checks if a ray intersects with the sphere
 func (s Sphere) Hit(ray ray.Ray, tmin float64, tmax float64, rec *HitRecord) bool {
 	// vector origin -> center

@@ -29,6 +29,7 @@ const (
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
 var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
 var configFile = flag.String("config", "config.json", "Location of config file")
+var worldFile = flag.String("world", "world.json", "Location of world file")
 
 func main() {
 	flag.Parse()
@@ -44,6 +45,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	// Load tracer configuration
 	var tracerConfig config
 	c, err := ioutil.ReadFile(*configFile)
 	if err != nil {
@@ -53,12 +55,27 @@ func main() {
 		log.Fatal(fmt.Sprintf("Unable to decode config: %s\n+", err))
 	}
 
+	// Load world configuration
+	var worldConf worldConfig
+	w, err := ioutil.ReadFile(*worldFile)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Unable to open world file: %s\n", err))
+	}
+	if err = json.Unmarshal(w, &worldConf); err != nil {
+		log.Fatal(fmt.Sprintf("Unable to decode world config: %s\n+", err))
+	}
+
 	imgHeight := int(float64(tracerConfig.ImgWidth) / tracerConfig.Aspect)
 	numPixels := (imgHeight * tracerConfig.ImgWidth)
 
 	cam := camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
 
-	world := RandomWorld()
+	var world objects.HittableList
+	if worldConf.Random == true {
+		world = RandomWorld()
+	} else {
+		world = worldFromConfig(worldConf)
+	}
 	numWorkers := runtime.NumCPU()
 	jobs := make(chan job, numWorkers*10)
 	results := make(chan renderer.Pixel, numPixels)
