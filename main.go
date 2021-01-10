@@ -1,11 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math"
 	"os"
+	"path/filepath"
 	"runtime"
-	"strconv"
+	"runtime/pprof"
 	"time"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/renderer"
@@ -21,51 +26,115 @@ const (
 	maxColor = 255
 )
 
-func main() {
-	fileName := os.Args[1]
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to `file`")
+var memprofile = flag.String("memprofile", "", "write memory profile to `file`")
+var configFile = flag.String("config", "config.json", "Location of config file")
+var worldFile = flag.String("world", "world.json", "Location of world file")
 
-	imgWidth := 380
-	var err error
-	if len(os.Args) == 3 {
-		imgWidth, err = strconv.Atoi(os.Args[2])
+func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to parse image size quitting! - %v\n", err)
-			os.Exit(1)
+			log.Fatal("could not create CPU profile: ", err)
 		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
 	}
 
-	aspect := 16.0 / 9.0
-	imgHeight := int(float64(imgWidth) / aspect)
-	samplesPerPixel := 100
-	maxDepth := 50
+	// Load tracer configuration
+	var tracerConfig config
+	c, err := ioutil.ReadFile(*configFile)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Unable to open config: %s\n", err))
+	}
+	if err = json.Unmarshal(c, &tracerConfig); err != nil {
+		log.Fatal(fmt.Sprintf("Unable to decode config: %s\n+", err))
+	}
 
-	numPixels := (imgHeight * imgWidth)
+	// Load world configuration
+	var worldConf worldConfig
+	w, err := ioutil.ReadFile(*worldFile)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Unable to open world file: %s\n", err))
+	}
+	if err = json.Unmarshal(w, &worldConf); err != nil {
+		log.Fatal(fmt.Sprintf("Unable to decode world config: %s\n+", err))
+	}
 
-	lookfrom := vec3.Point{X: 13, Y: 2, Z: 3}
-	lookat := vec3.Point{X: 0, Y: 0, Z: 0}
-	vup := vec3.Vec3{X: 0, Y: 1, Z: 0}
-	distToFocus := 10.0
-	aperture := 0.1
-	cam := camera.InitCamera(lookfrom, lookat, vup, 20, float64(imgWidth)/float64(imgHeight), aperture, distToFocus)
+	imgHeight := int(float64(tracerConfig.ImgWidth) / tracerConfig.Aspect)
 
-	world := RandomWorld()
+	cam := camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
+
+	var world objects.HittableList
+	if worldConf.Random == true {
+		world = RandomWorld()
+	} else {
+		world = worldFromConfig(worldConf)
+	}
+
+	if tracerConfig.Animation.Enabled {
+		framesPerSecond := tracerConfig.Animation.Fps
+		numFrames := framesPerSecond * tracerConfig.Animation.Duration
+		fileExt := filepath.Ext(tracerConfig.FileName)
+		baseFileName := tracerConfig.FileName[:len(tracerConfig.FileName)-len(fileExt)]
+		// radius of our circle is the distance from the origin in the XZ plane
+		r := math.Sqrt(math.Pow(tracerConfig.Camera.LookFrom.X, 2) + math.Pow(tracerConfig.Camera.LookFrom.Z, 2))
+		for i := 0; i < numFrames+1; i++ {
+			// Move in circle of radius r
+			// x**2 + z**2 = r**2
+			// z = sqrt(r**2 - x**2)
+			// x max is r
+			// x min is -r
+			tracerConfig.Camera.LookFrom.X = float64(int((r*2/float64(numFrames))*float64(i*2)*1000000)%int((2*r+0.0001)*1000000))/1000000 - r
+			tracerConfig.Camera.LookFrom.Z = math.Sqrt(math.Pow(r, 2) - math.Pow(tracerConfig.Camera.LookFrom.X, 2))
+			if float64(i) > float64((numFrames+1)/2.0) {
+				tracerConfig.Camera.LookFrom.X = tracerConfig.Camera.LookFrom.X * -1
+				tracerConfig.Camera.LookFrom.Z = tracerConfig.Camera.LookFrom.Z * -1
+			}
+			cam = camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
+			// Format specifier hardcoded to number of zero padding, might want to do this more dynamically some other time
+			tracerConfig.FileName = fmt.Sprintf("%s%05d%s", baseFileName, i, fileExt)
+			renderFrame(tracerConfig, world, cam)
+		}
+
+	} else {
+		renderFrame(tracerConfig, world, cam)
+	}
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		defer f.Close()
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+	}
+}
+
+func renderFrame(c config, world objects.HittableList, cam *camera.Camera) {
+	imgHeight := int(float64(c.ImgWidth) / c.Aspect)
+	numPixels := (imgHeight * c.ImgWidth)
 	numWorkers := runtime.NumCPU()
 	jobs := make(chan job, numWorkers*10)
-	results := make(chan renderer.Pixel, numPixels)
+	results := make(chan renderer.Pixel, numWorkers*10)
 	start := time.Now()
 
 	s := workerState{
 		jobs:     jobs,
 		results:  results,
 		height:   imgHeight,
-		width:    imgWidth,
-		spp:      samplesPerPixel,
+		width:    c.ImgWidth,
+		spp:      c.SamplesPerPixel,
 		world:    world,
-		maxDepth: maxDepth,
+		maxDepth: c.MaxDepth,
 		cam:      cam,
 	}
-
-	go fillJobsQueue(imgHeight, imgWidth, jobs)
+	go fillJobsQueue(imgHeight, c.ImgWidth, jobs)
 	for i := 0; i < numWorkers; i++ {
 		go worker(s)
 	}
@@ -81,13 +150,13 @@ func main() {
 	close(jobs)
 
 	pngRenderer := renderer.PNGRenderer{
-		ImageWidth:      imgWidth,
+		ImageWidth:      c.ImgWidth,
 		ImageHeight:     imgHeight,
 		ImagePixels:     pixels,
-		SamplesPerPixel: samplesPerPixel,
+		SamplesPerPixel: c.SamplesPerPixel,
 	}
-	pngRenderer.Render(fileName)
-	fmt.Fprintf(os.Stderr, "\nDone\n")
+	pngRenderer.Render(c.FileName)
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // RayColor returns the ray color
@@ -170,7 +239,7 @@ func progress(done, total int, start time.Time) {
 	for i := 0; i < (barSize - doneBars); i++ {
 		fmt.Fprintf(os.Stderr, " ")
 	}
-	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.0f - Elapsed: %6d - ETA: %6ds", pctComplete*100, rate, int(elapsed), int(eta))
+	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.0f - Elapsed: %6.2f - ETA: %6ds", pctComplete*100, rate, elapsed, int(eta))
 
 	for i := 0; i < 5; i++ {
 		fmt.Fprintf(os.Stderr, " ")

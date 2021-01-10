@@ -1,7 +1,9 @@
 package objects
 
 import (
+	"errors"
 	"math"
+	"strings"
 
 	"github.com/vfrazao-ns1/raytracing1weekend/ray"
 	"github.com/vfrazao-ns1/raytracing1weekend/utils"
@@ -11,6 +13,47 @@ import (
 // A Material is an interface representing any possible material
 type Material interface {
 	Scatter(ray.Ray, HitRecord, *vec3.Color, *ray.Ray) bool
+}
+
+func newMaterial(matInferface map[string]interface{}) (Material, error) {
+	// This is needed to unmarshal JSON into objects
+	// Any new material that gets added needs to modify this function
+	matType := ""
+	if t, ok := matInferface["type"].(string); ok {
+		matType = strings.ToLower(t)
+	}
+	switch matType {
+	case "lambertian":
+		actual := Lambertian{}
+		if albedo, ok := matInferface["albedo"].(map[string]interface{}); ok {
+			actual.Albedo = vec3.Color{
+				X: albedo["x"].(float64),
+				Y: albedo["y"].(float64),
+				Z: albedo["z"].(float64),
+			}
+		}
+		return actual, nil
+	case "metal":
+		actual := Metal{}
+		if albedo, ok := matInferface["albedo"].(map[string]interface{}); ok {
+			actual.Albedo = vec3.Color{
+				X: albedo["x"].(float64),
+				Y: albedo["y"].(float64),
+				Z: albedo["z"].(float64),
+			}
+		}
+		if fuzz, ok := matInferface["fuzz"].(float64); ok {
+			actual.Fuzz = fuzz
+		}
+		return actual, nil
+	case "dielectric":
+		actual := DiElectric{}
+		if refindex, ok := matInferface["refindex"].(float64); ok {
+			actual.RefIndex = refindex
+		}
+		return actual, nil
+	}
+	return nil, errors.New("Unable to select material")
 }
 
 // Lambertian material type struct

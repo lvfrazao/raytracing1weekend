@@ -3,3 +3,10 @@ render*.png
 *.exe
 raytracing1weekend
 *.xcf
+*.pprof
+*.prof
+.vscode/
+*.out
+animation/*.png
+animation/*.gif
+animation/*.mp4

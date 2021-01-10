@@ -55,3 +55,7 @@ My implementation of Peter Shirley's ray tracing tutorial, ["Ray Tracing in One 
 13. Final Render
 
 ![Final Render](12_final_render.png)
+
+14. Animated Render
+
+![Animated Render](13_animated.gif)

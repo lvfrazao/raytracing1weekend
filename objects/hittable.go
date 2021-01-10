@@ -1,6 +1,8 @@
 package objects
 
 import (
+	"encoding/json"
+
 	"github.com/vfrazao-ns1/raytracing1weekend/ray"
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
 )
@@ -57,4 +59,46 @@ func (hl *HittableList) Add(elem Hittable) {
 		hl.Data = make([]Hittable, 0)
 	}
 	hl.Data = append(hl.Data, elem)
+}
+
+// Hittables is a slice of hittables
+type Hittables []Hittable
+
+// UnmarshalJSON is just a custom unmarshaler for Hittables
+// From: https://stackoverflow.com/questions/42721732/is-there-a-way-to-have-json-unmarshal-select-struct-type-based-on-type-prope
+func (hs *Hittables) UnmarshalJSON(data []byte) error {
+	// this just splits up the JSON array into the raw JSON for each object
+	var raw []json.RawMessage
+	err := json.Unmarshal(data, &raw)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range raw {
+		// unamrshal into a map to check the "type" field
+		var obj map[string]interface{}
+		err := json.Unmarshal(r, &obj)
+		if err != nil {
+			return err
+		}
+
+		hittableType := ""
+		if t, ok := obj["type"].(string); ok {
+			hittableType = t
+		}
+
+		// Send to custom constructor functions to instantiate object
+		var actual Hittable
+		switch hittableType {
+		case "sphere":
+			actual, err = newSphere(obj)
+			if err != nil {
+				return err
+			}
+		}
+
+		*hs = append(*hs, actual)
+
+	}
+	return nil
 }

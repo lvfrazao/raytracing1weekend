@@ -1,0 +1,32 @@
+{
+    "fileName": "animation/render.png",
+    "animation": {
+        "enabled": true,
+        "fps": 24,
+        "duration": 10
+    },
+    "imgWidth": 380,
+    "aspect": 1.7777777777777777777777777777,
+    "samplesPerPixel": 10,
+    "maxDepth": 50,
+    "camera": {
+        "lookFrom": {
+            "x": -20,
+            "y": 2,
+            "z": 0
+        },
+        "lookAt": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+        },
+        "vup": {
+            "x": 0,
+            "y": 1,
+            "z": 0
+        },
+        "vfov": 20,
+        "aperture": 0.1,
+        "focusDist": 20
+    }
+}

@@ -6,6 +6,10 @@ import (
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
 )
 
+func worldFromConfig(conf worldConfig) objects.HittableList {
+	return objects.HittableList{Data: conf.Static}
+}
+
 func staticScene() objects.HittableList {
 	world := new(objects.HittableList)
 	world.Add(
@@ -121,7 +125,7 @@ func RandomWorld() objects.HittableList {
 		objects.Sphere{
 			Center: vec3.Point{X: -4, Y: 1, Z: 0},
 			Radius: 1.0,
-			Mat:    objects.Lambertian{Albedo: vec3.Color{X: 0.4, Y: 0.2, Z: 0.1}},
+			Mat:    objects.Lambertian{Albedo: vec3.Color{X: 0.4, Y: 0.69, Z: 0.1}},
 		},
 	)
 
