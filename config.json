@@ -1,14 +1,19 @@
 {
-    "fileName": "renderWorld.png",
-    "imgWidth": 1000,
-    "aspect": 1.7777777777777777,
-    "samplesPerPixel": 100,
+    "fileName": "animation/render.png",
+    "animation": {
+        "enabled": true,
+        "fps": 24,
+        "duration": 10
+    },
+    "imgWidth": 380,
+    "aspect": 1.7777777777777777777777777777,
+    "samplesPerPixel": 10,
     "maxDepth": 50,
     "camera": {
         "lookFrom": {
-            "x": 10,
+            "x": -20,
             "y": 2,
-            "z": 3
+            "z": 0
         },
         "lookAt": {
             "x": 0,
@@ -22,6 +27,6 @@
         },
         "vfov": 20,
         "aperture": 0.1,
-        "focusDist": 10
+        "focusDist": 20
     }
 }

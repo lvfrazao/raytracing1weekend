@@ -6,12 +6,13 @@ import (
 )
 
 type config struct {
-	FileName        string  // Name of file to save to render
-	ImgWidth        int     // Resolution width
-	Aspect          float64 // Aspect ratio float e.g., 16:9 equals 1.7777777
-	SamplesPerPixel int     // How many rays to simulate hitting a given pixel (higher is better quality)
-	MaxDepth        int
-	Camera          cameraConfig // Camera config
+	FileName        string          // Name of file to save to render
+	ImgWidth        int             // Resolution width
+	Aspect          float64         // Aspect ratio float e.g., 16:9 equals 1.7777777
+	SamplesPerPixel int             // How many rays to simulate hitting a given pixel (higher is better quality)
+	MaxDepth        int             // Max distance a ray will fly
+	Camera          cameraConfig    // Camera config
+	Animation       animationConfig // Whether to make an animation
 }
 
 type cameraConfig struct {
@@ -26,4 +27,10 @@ type cameraConfig struct {
 type worldConfig struct {
 	Random bool              // Whether to generate a random scene, overides the Static attribute
 	Static objects.Hittables // List of "Hittable" shapes
+}
+
+type animationConfig struct {
+	Enabled  bool // Whether to run in animation mode
+	Fps      int  // Frames per second
+	Duration int  // How long to animate for in seconds
 }

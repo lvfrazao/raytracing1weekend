@@ -7,3 +7,5 @@ raytracing1weekend
 *.prof
 .vscode/
 *.out
+animation/*.png
+

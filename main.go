@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	_ "net/http/pprof"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"time"
@@ -66,7 +66,6 @@ func main() {
 	}
 
 	imgHeight := int(float64(tracerConfig.ImgWidth) / tracerConfig.Aspect)
-	numPixels := (imgHeight * tracerConfig.ImgWidth)
 
 	cam := camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
 
@@ -76,23 +75,66 @@ func main() {
 	} else {
 		world = worldFromConfig(worldConf)
 	}
+
+	if tracerConfig.Animation.Enabled {
+		framesPerSecond := tracerConfig.Animation.Fps
+		numFrames := framesPerSecond * tracerConfig.Animation.Duration
+		fileExt := filepath.Ext(tracerConfig.FileName)
+		baseFileName := tracerConfig.FileName[:len(tracerConfig.FileName)-len(fileExt)]
+		// radius of our circle is the distance from the origin in the XZ plane
+		r := math.Sqrt(math.Pow(tracerConfig.Camera.LookFrom.X, 2) + math.Pow(tracerConfig.Camera.LookFrom.Z, 2))
+		for i := 0; i < numFrames+1; i++ {
+			// Move in circle of radius r
+			// x**2 + z**2 = r**2
+			// z = sqrt(r**2 - x**2)
+			// x max is r
+			// x min is -r
+			tracerConfig.Camera.LookFrom.X = float64(int((r*2/float64(numFrames))*float64(i*2)*1000000)%int((2*r+0.0001)*1000000))/1000000 - r
+			tracerConfig.Camera.LookFrom.Z = math.Sqrt(math.Pow(r, 2) - math.Pow(tracerConfig.Camera.LookFrom.X, 2))
+			if float64(i) > float64((numFrames+1)/2.0) {
+				tracerConfig.Camera.LookFrom.X = tracerConfig.Camera.LookFrom.X * -1
+				tracerConfig.Camera.LookFrom.Z = tracerConfig.Camera.LookFrom.Z * -1
+			}
+			cam = camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
+			// Format specifier hardcoded to number of zero padding, might want to do this more dynamically some other time
+			tracerConfig.FileName = fmt.Sprintf("%s%05d%s", baseFileName, i, fileExt)
+			renderFrame(tracerConfig, world, cam)
+		}
+
+	} else {
+		renderFrame(tracerConfig, world, cam)
+	}
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		defer f.Close()
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+	}
+}
+
+func renderFrame(c config, world objects.HittableList, cam *camera.Camera) {
+	imgHeight := int(float64(c.ImgWidth) / c.Aspect)
+	numPixels := (imgHeight * c.ImgWidth)
 	numWorkers := runtime.NumCPU()
 	jobs := make(chan job, numWorkers*10)
-	results := make(chan renderer.Pixel, numPixels)
+	results := make(chan renderer.Pixel, numWorkers*10)
 	start := time.Now()
 
 	s := workerState{
 		jobs:     jobs,
 		results:  results,
 		height:   imgHeight,
-		width:    tracerConfig.ImgWidth,
-		spp:      tracerConfig.SamplesPerPixel,
+		width:    c.ImgWidth,
+		spp:      c.SamplesPerPixel,
 		world:    world,
-		maxDepth: tracerConfig.MaxDepth,
+		maxDepth: c.MaxDepth,
 		cam:      cam,
 	}
-
-	go fillJobsQueue(imgHeight, tracerConfig.ImgWidth, jobs)
+	go fillJobsQueue(imgHeight, c.ImgWidth, jobs)
 	for i := 0; i < numWorkers; i++ {
 		go worker(s)
 	}
@@ -108,25 +150,13 @@ func main() {
 	close(jobs)
 
 	pngRenderer := renderer.PNGRenderer{
-		ImageWidth:      tracerConfig.ImgWidth,
+		ImageWidth:      c.ImgWidth,
 		ImageHeight:     imgHeight,
 		ImagePixels:     pixels,
-		SamplesPerPixel: tracerConfig.SamplesPerPixel,
+		SamplesPerPixel: c.SamplesPerPixel,
 	}
-	pngRenderer.Render(tracerConfig.FileName)
-	fmt.Fprintf(os.Stderr, "\nDone\n")
-
-	if *memprofile != "" {
-		f, err := os.Create(*memprofile)
-		if err != nil {
-			log.Fatal("could not create memory profile: ", err)
-		}
-		defer f.Close()
-		runtime.GC()
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatal("could not write memory profile: ", err)
-		}
-	}
+	pngRenderer.Render(c.FileName)
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // RayColor returns the ray color
@@ -209,7 +239,7 @@ func progress(done, total int, start time.Time) {
 	for i := 0; i < (barSize - doneBars); i++ {
 		fmt.Fprintf(os.Stderr, " ")
 	}
-	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.0f - Elapsed: %6d - ETA: %6ds", pctComplete*100, rate, int(elapsed), int(eta))
+	fmt.Fprintf(os.Stderr, "] (%.2f%%) Rate: %.0f - Elapsed: %6.2f - ETA: %6ds", pctComplete*100, rate, elapsed, int(eta))
 
 	for i := 0; i < 5; i++ {
 		fmt.Fprintf(os.Stderr, " ")
