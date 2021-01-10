@@ -8,4 +8,5 @@ raytracing1weekend
 .vscode/
 *.out
 animation/*.png
-
+animation/*.gif
+animation/*.mp4
