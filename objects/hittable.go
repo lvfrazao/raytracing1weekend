@@ -38,15 +38,13 @@ type HittableList struct {
 
 // Hit were any hittables hit?
 func (hl HittableList) Hit(r ray.Ray, tmin float64, tmax float64, rec *HitRecord) bool {
-	tempRec := new(HitRecord)
 	hitAnything := false
 	closest := tmax
 
 	for _, obj := range hl.Data {
-		if obj.Hit(r, tmin, closest, tempRec) {
+		if obj.Hit(r, tmin, closest, rec) {
 			hitAnything = true
-			closest = tempRec.T
-			*rec = *tempRec
+			closest = rec.T
 		}
 	}
 
