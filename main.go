@@ -85,16 +85,13 @@ func main() {
 		r := math.Sqrt(math.Pow(tracerConfig.Camera.LookFrom.X, 2) + math.Pow(tracerConfig.Camera.LookFrom.Z, 2))
 		for i := 0; i < numFrames+1; i++ {
 			// Move in circle of radius r
-			// x**2 + z**2 = r**2
-			// z = sqrt(r**2 - x**2)
-			// x max is r
-			// x min is -r
-			tracerConfig.Camera.LookFrom.X = float64(int((r*2/float64(numFrames))*float64(i*2)*1000000)%int((2*r+0.0001)*1000000))/1000000 - r
-			tracerConfig.Camera.LookFrom.Z = math.Sqrt(math.Pow(r, 2) - math.Pow(tracerConfig.Camera.LookFrom.X, 2))
-			if float64(i) > float64((numFrames+1)/2.0) {
-				tracerConfig.Camera.LookFrom.X = tracerConfig.Camera.LookFrom.X * -1
-				tracerConfig.Camera.LookFrom.Z = tracerConfig.Camera.LookFrom.Z * -1
-			}
+			// at a *constant* rate
+			// To do this we will move 2pi radian over numFrames
+			// From unit circle: x,y = cos(rad), sin(rad)
+			// We multiply by r
+			rad := 2 * math.Pi * float64(i) / float64(numFrames)
+			tracerConfig.Camera.LookFrom.X = math.Cos(rad) * r
+			tracerConfig.Camera.LookFrom.Z = math.Sin(rad) * r
 			cam = camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
 			// Format specifier hardcoded to number of zero padding, might want to do this more dynamically some other time
 			tracerConfig.FileName = fmt.Sprintf("%s%05d%s", baseFileName, i, fileExt)

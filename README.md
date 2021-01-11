@@ -59,3 +59,8 @@ My implementation of Peter Shirley's ray tracing tutorial, ["Ray Tracing in One 
 14. Animated Render
 
 ![Animated Render](13_animated.gif)
+
+15. Smooth Circular Motion
+
+![Smooth Circular Motion](14_smooth_circular_motion.gif)
+
