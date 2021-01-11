@@ -12,6 +12,15 @@ type Vec3 struct {
 	Z float64
 }
 
+// These are all alternate implementations of LengthSquared in ASM
+// These are all slower since they can't be inlined so they spec a ton
+// of time putting and taking stuff on the stack
+func lensq(x, y, z float64) float64
+func lensq2(x, y, z float64) float64
+func lensq3(x, y, z float64) float64
+func lensq4(x, y, z float64) float64
+func lensq5(x, y, z float64) float64
+
 // LengthSquared length squared of the vector (duh)
 func (v Vec3) LengthSquared() float64 {
 	return v.Dot(v)
