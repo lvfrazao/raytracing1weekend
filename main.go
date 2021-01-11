@@ -160,9 +160,7 @@ func renderFrame(c config, world objects.HittableList, cam *camera.Camera) {
 }
 
 // RayColor returns the ray color
-func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
-	hitRec := new(objects.HitRecord)
-
+func RayColor(r ray.Ray, world objects.HittableList, depth int, hitRec *objects.HitRecord) vec3.Color {
 	if depth <= 0 {
 		return vec3.Color{X: 0, Y: 0, Z: 0}
 	}
@@ -173,7 +171,7 @@ func RayColor(r ray.Ray, world objects.Hittable, depth int) vec3.Color {
 		scattered := new(ray.Ray)
 		attenuation := new(vec3.Color)
 		if hitRec.Material.Scatter(r, *hitRec, attenuation, scattered) {
-			return attenuation.Mul(RayColor(*scattered, world, depth-1))
+			return attenuation.Mul(RayColor(*scattered, world, depth-1, hitRec))
 		}
 		return vec3.Color{X: 0, Y: 0, Z: 0}
 	}
@@ -209,6 +207,7 @@ func fillJobsQueue(height, width int, jobs chan<- job) {
 }
 
 func worker(state workerState) {
+	hr := new(objects.HitRecord)
 	for job := range state.jobs {
 		pixel := renderer.Pixel{
 			Color:    vec3.Color{X: 0, Y: 0, Z: 0},
@@ -218,7 +217,7 @@ func worker(state workerState) {
 			u := (float64(job.i) + utils.RandomDouble()) / float64(state.width-1)
 			v := (float64(job.j) + utils.RandomDouble()) / float64(state.height-1)
 			ray := state.cam.GetRay(u, v)
-			pixel.Color = pixel.Color.Add(RayColor(ray, state.world, state.maxDepth))
+			pixel.Color = pixel.Color.Add(RayColor(ray, state.world, state.maxDepth, hr))
 		}
 		state.results <- pixel
 	}
