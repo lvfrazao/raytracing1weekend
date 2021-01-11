@@ -10,6 +10,22 @@ func isCloseEnough(a, b float64) bool {
 	return math.Abs(a-b) < tolerance
 }
 
+func TestIsCloseEnough1(t *testing.T) {
+	a := 1.0001
+	b := 1.0
+	if isCloseEnough(a, b) {
+		t.Errorf("%f and %f arent close enough, this should have failed", a, b)
+	}
+}
+
+func TestIsCloseEnough2(t *testing.T) {
+	a := 1.000001
+	b := 1.0
+	if !isCloseEnough(a, b) {
+		t.Errorf("%f and %f are close enough, this should not have failed", a, b)
+	}
+}
+
 func TestLenSqASM1(t *testing.T) {
 	vector := Vec3{
 		X: -10.0,
