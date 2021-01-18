@@ -93,6 +93,11 @@ func (hs *Hittables) UnmarshalJSON(data []byte) error {
 			if err != nil {
 				return err
 			}
+		case "triangle":
+			actual, err = newTriangle(obj)
+			if err != nil {
+				return err
+			}
 		}
 
 		*hs = append(*hs, actual)
