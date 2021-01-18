@@ -2,8 +2,9 @@ package utils
 
 import (
 	"math"
-	rand "lukechampine.com/frand"
+
 	"github.com/vfrazao-ns1/raytracing1weekend/vec3"
+	rand "lukechampine.com/frand"
 )
 
 func Degrees2radians(degrees float64) float64 {
@@ -79,4 +80,8 @@ func RandomInUnitDisk() vec3.Vec3 {
 		}
 		return p
 	}
+}
+
+func MakeEven(num int) int {
+	return num & ^1
 }
