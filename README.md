@@ -68,3 +68,11 @@ My implementation of Peter Shirley's ray tracing tutorial, ["Ray Tracing in One 
 
 ![Triangles](15_triangles.gif)
 
+17. Rectangles
+
+![Rectangles](16_rectangles.gif)
+
+18. Chess Board
+
+![Chess Board](17_chessboard.png)
+
