@@ -65,7 +65,7 @@ func main() {
 		log.Fatal(fmt.Sprintf("Unable to decode world config: %s\n+", err))
 	}
 
-	imgHeight := int(float64(tracerConfig.ImgWidth) / tracerConfig.Aspect)
+	imgHeight := utils.MakeEven(int(float64(tracerConfig.ImgWidth) / tracerConfig.Aspect))
 
 	cam := camera.InitCamera(tracerConfig.Camera.LookFrom, tracerConfig.Camera.LookAt, tracerConfig.Camera.Vup, tracerConfig.Camera.VFOV, float64(tracerConfig.ImgWidth)/float64(imgHeight), tracerConfig.Camera.Aperture, tracerConfig.Camera.FocusDist)
 
@@ -114,7 +114,7 @@ func main() {
 }
 
 func renderFrame(c config, world objects.HittableList, cam *camera.Camera) {
-	imgHeight := int(float64(c.ImgWidth) / c.Aspect)
+	imgHeight := utils.MakeEven(int(float64(c.ImgWidth) / c.Aspect))
 	numPixels := (imgHeight * c.ImgWidth)
 	numWorkers := runtime.NumCPU()
 	jobs := make(chan job, numWorkers*10)
