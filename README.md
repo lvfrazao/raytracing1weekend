@@ -64,3 +64,7 @@ My implementation of Peter Shirley's ray tracing tutorial, ["Ray Tracing in One 
 
 ![Smooth Circular Motion](14_smooth_circular_motion.gif)
 
+16. Triangles
+
+![Triangles](15_triangles.gif)
+
